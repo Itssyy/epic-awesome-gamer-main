@@ -30,8 +30,8 @@ jobs:
     - name: Create virtual environment
       run: uv venv
 
-    - name: Install Python dependencies from lock file
-      run: uv pip install --locked
+    - name: Install Python dependencies
+      run: pip install -r requirements.txt
         
     - name: Create accounts file
       run: |
