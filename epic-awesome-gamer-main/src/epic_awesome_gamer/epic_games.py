@@ -359,3 +359,5 @@ class EpicGames:
             await self.collect_weekly_games(self._promotions)
             
             logger.success(f"✅ Завершена обработка аккаунта: {email}")
+
+        logger.complete() # Сброс буфера логирования

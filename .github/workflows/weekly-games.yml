@@ -50,7 +50,7 @@ jobs:
         echo "Installed packages:"
         pip list
         echo "Running script..."
-        PYTHONUNBUFFERED=1 xvfb-run python -u src/epic_awesome_gamer/epic_games.py 2>&1 | tee output.log
+        PYTHONUNBUFFERED=1 xvfb-run python -m epic_awesome_gamer.cli.main collect 2>&1 | tee output.log
         echo "Script finished with exit code: $?"
         
     - name: Show output

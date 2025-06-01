@@ -21,6 +21,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Добавляем обработчик loguru для вывода в stderr и перехвата стандартного logging
+from loguru import logger as loguru_logger # Импортируем loguru под другим именем
+loguru_logger.add(sys.stderr, format="{time} {level} {message}", filter="epic_awesome_gamer", level="INFO")
+
 # Create top-level application
 app = typer.Typer(
     name="epic-awesome-gamer",
