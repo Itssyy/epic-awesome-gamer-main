@@ -83,24 +83,34 @@ jobs:
     - name: Send Telegram notification
       if: always() # Выполнять всегда, даже если предыдущие шаги упали
       run: |
-        # Определяем статус выполнения job'а
+        # Формируем сообщение
+        WORKFLOW_NAME="${{ github.workflow }}"
+        CURRENT_DATE=$(date '+%Y-%m-%d %H:%M:%S')
+        RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        
         if [ "${{ job.status }}" = "success" ]; then
           MESSAGE="✅ GitHub Actions Workflow успешно завершен.
-          
-          🔄 Работа выполнена: ${{ github.workflow }}
-          📅 Дата: $(date '+%Y-%m-%d %H:%M:%S')
-          🔗 Ссылка: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+🔄 Работа: ${WORKFLOW_NAME}
+📅 Дата: ${CURRENT_DATE}
+🔗 Ссылка: ${RUN_URL}"
         else
           MESSAGE="❌ GitHub Actions Workflow завершен с ошибкой.
-          
-          🔄 Работа: ${{ github.workflow }}
-          📅 Дата: $(date '+%Y-%m-%d %H:%M:%S')
-          🔗 Ссылка: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+🔄 Работа: ${WORKFLOW_NAME}
+📅 Дата: ${CURRENT_DATE}
+🔗 Ссылка: ${RUN_URL}"
         fi
-        
+
         # Отправляем уведомление в Telegram
-        curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
-          -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-          -d text="$MESSAGE" \
-          -d parse_mode="HTML" \
-          -d disable_web_page_preview=true
+        TELEGRAM_API="https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage"
+        CHAT_ID="${{ secrets.TELEGRAM_CHAT_ID }}"
+        
+        curl -s -X POST "${TELEGRAM_API}" \
+          -d "chat_id=${CHAT_ID}" \
+          -d "text=${MESSAGE}" \
+          -d "parse_mode=HTML" \
+          -d "disable_web_page_preview=true" || {
+            echo "Failed to send Telegram notification"
+            exit 1
+          }
