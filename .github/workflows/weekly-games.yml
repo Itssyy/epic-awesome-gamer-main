@@ -5,7 +5,6 @@ on:
     - cron: '0 0 * * 0'  # Запуск каждое воскресенье в 00:00 UTC
     - cron: '0 0 * * 5'  # Запуск каждую пятницу в 00:00 UTC
   workflow_dispatch:  # Позволяет запускать вручную
-  # Test comment
 
 jobs:
   collect-games:
@@ -81,33 +80,16 @@ jobs:
         fi
 
     - name: Send Telegram notification
-      if: always() # Выполнять всегда, даже если предыдущие шаги упали
+      if: always()
       run: |
-        # Формируем сообщение
-        WORKFLOW_NAME="${{ github.workflow }}"
-        CURRENT_DATE=$(date '+%Y-%m-%d %H:%M:%S')
-        RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-        
         if [ "${{ job.status }}" = "success" ]; then
-          MESSAGE="✅ GitHub Actions Workflow успешно завершен.
-
-🔄 Работа: ${WORKFLOW_NAME}
-📅 Дата: ${CURRENT_DATE}
-🔗 Ссылка: ${RUN_URL}"
+          MESSAGE="✅ GitHub Actions Workflow успешно завершен. Ссылка: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         else
-          MESSAGE="❌ GitHub Actions Workflow завершен с ошибкой.
-
-🔄 Работа: ${WORKFLOW_NAME}
-📅 Дата: ${CURRENT_DATE}
-🔗 Ссылка: ${RUN_URL}"
+          MESSAGE="❌ GitHub Actions Workflow завершен с ошибкой. Ссылка: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         fi
 
-        # Отправляем уведомление в Telegram
-        TELEGRAM_API="https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage"
-        CHAT_ID="${{ secrets.TELEGRAM_CHAT_ID }}"
-        
-        curl -s -X POST "${TELEGRAM_API}" \
-          -d "chat_id=${CHAT_ID}" \
+        curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+          -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
           -d "text=${MESSAGE}" \
           -d "parse_mode=HTML" \
           -d "disable_web_page_preview=true" || {
