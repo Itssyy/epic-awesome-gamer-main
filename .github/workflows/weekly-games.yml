@@ -37,8 +37,52 @@ jobs:
         pip install -e .
         
     - name: Run Epic Games Collector
+      id: run_script
       run: |
         cd epic-awesome-gamer-main
         echo '${{ secrets.EPIC_ACCOUNTS }}' > accounts.json
         echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > .env
-        xvfb-run python src/epic_awesome_gamer/epic_games.py 
+        xvfb-run python src/epic_awesome_gamer/epic_games.py 2>&1 | tee output.log
+        
+    - name: Show output
+      if: always()
+      run: |
+        echo "=== Script Output ==="
+        cat output.log
+        
+    - name: Send Telegram notification
+      if: always()
+      run: |
+        python -c "
+        import requests
+        import os
+        from datetime import datetime
+        
+        # Читаем лог выполнения
+        with open('epic-awesome-gamer-main/output.log', 'r') as f:
+            output = f.read()
+        
+        # Формируем сообщение
+        status = '✅ Успешно' if '${{ job.status }}' == 'success' else '❌ Ошибка'
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        message = f'''🎮 Epic Games Collector
+        Время: {current_time}
+        Статус: {status}
+        
+        Результат выполнения:
+        {output}'''
+        
+        # Отправляем сообщение
+        telegram_token = '${{ secrets.TELEGRAM_BOT_TOKEN }}'
+        telegram_chat_id = '${{ secrets.TELEGRAM_CHAT_ID }}'
+        
+        url = f'https://api.telegram.org/bot{telegram_token}/sendMessage'
+        data = {
+            'chat_id': telegram_chat_id,
+            'text': message,
+            'parse_mode': 'HTML'
+        }
+        
+        requests.post(url, data=data)
+        " 
