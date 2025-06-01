@@ -1,0 +1,30 @@
+name: Weekly Epic Games Collector
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # Запуск каждое воскресенье в 00:00 UTC
+  workflow_dispatch:  # Позволяет запускать вручную
+
+jobs:
+  collect-games:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: Create accounts file
+      run: |
+        echo '${{ secrets.EPIC_ACCOUNTS }}' > accounts.json
+        
+    - name: Run Epic Games Collector
+      run: python main.py 

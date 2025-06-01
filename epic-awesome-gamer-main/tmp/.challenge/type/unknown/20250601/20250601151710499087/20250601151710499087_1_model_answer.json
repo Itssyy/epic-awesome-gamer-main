@@ -1,0 +1,83 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "video_metadata": null,
+            "thought": null,
+            "inline_data": null,
+            "file_data": null,
+            "thought_signature": null,
+            "code_execution_result": null,
+            "executable_code": null,
+            "function_call": null,
+            "function_response": null,
+            "text": "{\n  \"challenge_prompt\": \"Choose all items with rotating components like the example shown\",\n  \"coordinates\": [\n    {\n      \"box_2d\": [1, 1]\n    },\n    {\n      \"box_2d\": [2, 1]\n    },\n    {\n      \"box_2d\": [2, 2]\n    }\n  ]\n}"
+          }
+        ],
+        "role": "model"
+      },
+      "citation_metadata": null,
+      "finish_message": null,
+      "token_count": null,
+      "finish_reason": "STOP",
+      "url_context_metadata": null,
+      "avg_logprobs": null,
+      "grounding_metadata": null,
+      "index": 0,
+      "logprobs_result": null,
+      "safety_ratings": null
+    }
+  ],
+  "create_time": null,
+  "response_id": null,
+  "model_version": "models/gemini-2.5-flash-preview-05-20",
+  "prompt_feedback": null,
+  "usage_metadata": {
+    "cache_tokens_details": null,
+    "cached_content_token_count": null,
+    "candidates_token_count": 91,
+    "candidates_tokens_details": null,
+    "prompt_token_count": 382,
+    "prompt_tokens_details": [
+      {
+        "modality": "TEXT",
+        "token_count": 124
+      },
+      {
+        "modality": "IMAGE",
+        "token_count": 258
+      }
+    ],
+    "thoughts_token_count": 295,
+    "tool_use_prompt_token_count": null,
+    "tool_use_prompt_tokens_details": null,
+    "total_token_count": 768,
+    "traffic_type": null
+  },
+  "automatic_function_calling_history": [],
+  "parsed": {
+    "challenge_prompt": "Choose all items with rotating components like the example shown",
+    "coordinates": [
+      {
+        "box_2d": [
+          1,
+          1
+        ]
+      },
+      {
+        "box_2d": [
+          2,
+          1
+        ]
+      },
+      {
+        "box_2d": [
+          2,
+          2
+        ]
+      }
+    ]
+  }
+}
