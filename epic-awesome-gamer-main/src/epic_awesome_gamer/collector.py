@@ -11,7 +11,7 @@ from playwright.async_api import Page
 
 from epic_awesome_gamer import get_promotions, EpicGames, EpicSettings
 from epic_awesome_gamer.epic_games import URL_CLAIM
-from epic_awesome_gamer.types import PromotionGame, OrderItem, Order
+from epic_awesome_gamer.game_types import PromotionGame, OrderItem, Order
 from hcaptcha_challenger.agent import AgentConfig
 
 

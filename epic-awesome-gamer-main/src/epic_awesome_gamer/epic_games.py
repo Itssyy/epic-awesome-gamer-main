@@ -16,7 +16,7 @@ from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from tenacity import *
 
-from epic_awesome_gamer.types import PromotionGame
+from epic_awesome_gamer.game_types import PromotionGame
 
 # fmt:off
 URL_CLAIM = "https://store.epicgames.com/en-US/free-games"
