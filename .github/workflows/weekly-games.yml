@@ -45,7 +45,12 @@ jobs:
         echo "Creating .env file..."
         echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > .env
         echo "Starting script..."
-        xvfb-run python -u src/epic_awesome_gamer/epic_games.py 2>&1 | tee output.log
+        echo "Python version:"
+        python --version
+        echo "Installed packages:"
+        pip list
+        echo "Running script with debug output..."
+        PYTHONUNBUFFERED=1 xvfb-run python -v src/epic_awesome_gamer/epic_games.py 2>&1 | tee output.log
         echo "Script finished with exit code: $?"
         
     - name: Show output
