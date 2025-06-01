@@ -48,7 +48,7 @@ jobs:
       if: always()
       run: |
         echo "=== Script Output ==="
-        cat output.log
+        cat epic-awesome-gamer-main/output.log
         
     - name: Send Telegram notification
       if: always()
