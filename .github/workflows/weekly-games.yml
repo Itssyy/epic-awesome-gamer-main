@@ -31,6 +31,10 @@ jobs:
       run: |
         echo '${{ secrets.EPIC_ACCOUNTS }}' > accounts.json
         
+    - name: Create env file
+      run: |
+        echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > .env
+        
     - name: Run Epic Games Collector
       run: |
         xvfb-run python src/epic_awesome_gamer/epic_games.py 
