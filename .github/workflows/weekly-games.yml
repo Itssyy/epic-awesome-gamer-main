@@ -4,95 +4,114 @@ on:
   schedule:
     - cron: '0 0 * * 0'  # Запуск каждое воскресенье в 00:00 UTC
     - cron: '0 0 * * 5'  # Запуск каждую пятницу в 00:00 UTC
-  workflow_dispatch:  # Позволяет запускать вручную
+  workflow_dispatch:    # Позволяет запускать вручную
 
 jobs:
   collect-games:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.12'
-        cache: 'pip'
-        
-    - name: Install system dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y xvfb
-        
-    - name: Set up virtual environment
-      run: |
-        python -m venv .venv
-        source .venv/bin/activate
-        python -m pip install --upgrade pip
-        
-    - name: Install Python dependencies
-      run: |
-        cd epic-awesome-gamer-main
-        source ../.venv/bin/activate
-        pip install -e .
-        if [ $? -ne 0 ]; then
-          echo "Failed to install dependencies"
-          exit 1
-        fi
-        
-    - name: Run Epic Games Collector
-      id: run_script
-      run: |
-        cd epic-awesome-gamer-main
-        source ../.venv/bin/activate
-        echo "Creating accounts.json..."
-        echo '${{ secrets.EPIC_ACCOUNTS }}' > accounts.json
-        echo "Creating .env file..."
-        echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > .env
-        echo "Starting script..."
-        echo "Python version:"
-        python --version
-        echo "Installed packages:"
-        pip list
-        echo "Running script..."
-        PYTHONUNBUFFERED=1 xvfb-run python -m epic_awesome_gamer.cli.main collect 2>&1 | tee output.log
-        SCRIPT_EXIT_CODE=$?
-        echo "Script finished with exit code: $SCRIPT_EXIT_CODE"
-        if [ $SCRIPT_EXIT_CODE -ne 0 ]; then
-          echo "Script execution failed"
-          exit $SCRIPT_EXIT_CODE
-        fi
-        
-    - name: Show output
-      if: always()
-      run: |
-        echo "=== Script Output ==="
-        LOG_FILE="epic-awesome-gamer-main/output.log"
-        if [ -f "$LOG_FILE" ]; then
-          echo "Output log file found: $LOG_FILE"
-          echo "=== Last 100 lines of log ==="
-          tail -n 100 "$LOG_FILE"
-          echo "=== End of log ==="
-        else
-          echo "Output log file NOT found at: $LOG_FILE"
-          echo "Current directory contents:"
-          ls -la
-        fi
-
-    - name: Send Telegram notification
-      if: always()
-      run: |
-        if [ "${{ job.status }}" = "success" ]; then
-          MESSAGE="✅ GitHub Actions Workflow успешно завершен. Ссылка: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-        else
-          MESSAGE="❌ GitHub Actions Workflow завершен с ошибкой. Ссылка: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-        fi
-
-        curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-          -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
-          -d "text=${MESSAGE}" \
-          -d "parse_mode=HTML" \
-          -d "disable_web_page_preview=true" || {
-            echo "Failed to send Telegram notification"
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+          
+      - name: Set up virtual environment
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          python -m pip install --upgrade pip
+          
+      - name: Install Python dependencies
+        run: |
+          cd epic-awesome-gamer-main
+          source ../.venv/bin/activate
+          pip install -e .
+          if [ $? -ne 0 ]; then
+            echo "Failed to install dependencies"
             exit 1
-          }
+          fi
+          
+      - name: Run Epic Games Collector
+        id: run_script
+        run: |
+          cd epic-awesome-gamer-main
+          source ../.venv/bin/activate
+          echo "Creating accounts.json..."
+          echo '${{ secrets.EPIC_ACCOUNTS }}' > accounts.json
+          echo "Creating .env file..."
+          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > .env
+          echo "Starting script..."
+          echo "Python version:"
+          python --version
+          echo "Installed packages:"
+          pip list
+          echo "Running script..."
+          PYTHONUNBUFFERED=1 xvfb-run python -m epic_awesome_gamer.cli.main collect 2>&1 | tee output.log
+          SCRIPT_EXIT_CODE=${PIPESTATUS[0]} # Use PIPESTATUS to get exit code of the first command in a pipe
+          echo "Script finished with exit code: $SCRIPT_EXIT_CODE"
+          if [ $SCRIPT_EXIT_CODE -ne 0 ]; then
+            echo "Script execution failed"
+            exit $SCRIPT_EXIT_CODE
+          fi
+          
+      - name: Show output
+        if: always()
+        run: |
+          echo "=== Script Output ==="
+          LOG_FILE="epic-awesome-gamer-main/output.log"
+          if [ -f "$LOG_FILE" ]; then
+            echo "Output log file found: $LOG_FILE"
+            echo "=== Last 100 lines of log ==="
+            tail -n 100 "$LOG_FILE"
+            echo "=== End of log ==="
+          else
+            echo "Output log file NOT found at: $LOG_FILE"
+            echo "Current directory contents:"
+            ls -la ./
+            ls -la epic-awesome-gamer-main/
+          fi
+
+      - name: Send Telegram notification
+        if: always()
+        run: |
+          GAMES_INFO=""
+          if [ -f "epic-awesome-gamer-main/output.log" ]; then
+            GAMES_INFO_RAW=$(grep -A 2 "Discover promotion" epic-awesome-gamer-main/output.log | grep "url=" | sed 's/.*《\(.*\)》.*/\1/' | tr '\n' ', ')
+            if [ -n "$GAMES_INFO_RAW" ]; then
+              GAMES_INFO=$(echo "$GAMES_INFO_RAW" | sed 's/, $//')
+            else
+              GAMES_INFO="N/A or no promotions found"
+            fi
+          else
+            GAMES_INFO="Log file not found for game info"
+          fi
+
+          JOB_STATUS_ICON="❓"
+          JOB_STATUS_TEXT="Unknown"
+          if [ "${{ job.status }}" = "success" ]; then
+            JOB_STATUS_ICON="✅"
+            JOB_STATUS_TEXT="Успешно"
+          elif [ "${{ job.status }}" = "failure" ]; then
+            JOB_STATUS_ICON="❌"
+            JOB_STATUS_TEXT="Ошибка"
+          else
+            JOB_STATUS_ICON="⚠️"
+            JOB_STATUS_TEXT="${{ job.status }}"
+          fi
+
+          MESSAGE="${JOB_STATUS_ICON} Epic Games Collector | Status: ${JOB_STATUS_TEXT} | Games: ${GAMES_INFO} | Accounts: 3 | Time: $(date '+%Y-%m-%d %H:%M:%S %Z') | Log: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d "text=${MESSAGE}" \
+            -d "parse_mode=MarkdownV2" \
+            -d "disable_web_page_preview=true"
