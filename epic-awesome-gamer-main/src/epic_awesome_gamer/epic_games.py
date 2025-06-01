@@ -7,6 +7,7 @@ import os
 from contextlib import suppress
 from pathlib import Path
 from typing import List
+import asyncio
 
 from hcaptcha_challenger.agent import AgentConfig, AgentV
 from loguru import logger
@@ -53,7 +54,7 @@ class EpicGames:
     @staticmethod
     async def _agree_license(page: Page):
         with suppress(TimeoutError):
-            await page.click("//label[@for='agree']", timeout=4000)
+            await page.click("//label[@for='agree']", timeout=29000)
             accept = page.locator("//button//span[text()='Accept']")
             if await accept.is_enabled():
                 await accept.click()
@@ -63,9 +64,9 @@ class EpicGames:
         wpc = page.frame_locator("//iframe[@class='']")
         payment_btn = wpc.locator("//div[@class='payment-order-confirm']")
         with suppress(Exception):
-            await expect(payment_btn).to_be_attached()
+            await expect(payment_btn).to_be_attached(timeout=29000)
         await page.wait_for_timeout(2000)
-        await payment_btn.click(timeout=6000)
+        await payment_btn.click(timeout=29000)
 
         return wpc, payment_btn
 
@@ -86,7 +87,7 @@ class EpicGames:
 
         # --> Add promotions to Cart
         for url in urls:
-            await page.goto(url, wait_until="load")
+            await page.goto(url, wait_until="load", timeout=29000)
 
             # <-- Handle pre-page
             # with suppress(TimeoutError):
@@ -177,19 +178,28 @@ class EpicGames:
         if not retry_times:
             return
 
+        # Очищаем все куки и кэш браузера
+        await page.context.clear_cookies()
+        await page.goto("about:blank")
+        await page.context.clear_permissions()
+
         point_url = "https://www.epicgames.com/account/personal?lang=en-US&productName=egs&sessionInvalidated=true"
-        await page.goto(point_url, wait_until="networkidle")
+        await page.goto(point_url, wait_until="networkidle", timeout=29000)
         logger.debug(f"Login with Email - {page.url}")
+        await asyncio.sleep(3)
 
         agent = AgentV(page=page, agent_config=self.solver_config)
 
         # {{< SIGN IN PAGE >}}
-        await page.type("#email", self.settings.EPIC_EMAIL, delay=30)
-        await page.type("#password", self.settings.EPIC_PASSWORD.get_secret_value(), delay=30)
+        await page.type("#email", self.settings.EPIC_EMAIL, delay=30, timeout=29000)
+        await asyncio.sleep(1)
+        await page.type("#password", self.settings.EPIC_PASSWORD.get_secret_value(), delay=30, timeout=29000)
+        await asyncio.sleep(1)
 
         try:
             # Active hCaptcha checkbox
-            await page.click("#sign-in")
+            await page.click("#sign-in", timeout=29000)
+            await asyncio.sleep(5)
             # Active hCaptcha challenge
             await agent.wait_for_challenge()
             # Wait for the page to redirect
@@ -201,9 +211,48 @@ class EpicGames:
         await page.wait_for_url(point_url)
         return True
 
+    async def _logout(self, page: Page):
+        """Logout from the current Epic Games account."""
+        try:
+            # Go to account page
+            await page.goto("https://www.epicgames.com/account/personal", wait_until="networkidle")
+            
+            # Check if we're logged in
+            if "true" != await page.locator("//egs-navigation").get_attribute("isloggedin"):
+                logger.debug("Already logged out")
+                return True
+
+            # Click on the account menu
+            await page.click("//button[@id='account-menu-button']")
+            
+            # Click logout button
+            await page.click("//a[contains(@href, '/logout')]")
+            
+            # Wait for logout to complete
+            await page.wait_for_load_state("networkidle")
+            logger.debug("Successfully logged out")
+            return True
+        except Exception as err:
+            logger.warning(f"Failed to logout - {err}")
+            return False
+
+    async def authorize(self, page: Page):
+        await page.goto(URL_CLAIM, wait_until="domcontentloaded", timeout=29000)
+        if "true" == await page.locator("//egs-navigation").get_attribute("isloggedin"):
+            # Check if we're already logged in with the correct account
+            try:
+                account_email = await page.locator("//button[@id='account-menu-button']").get_attribute("aria-label")
+                if self.settings.EPIC_EMAIL.lower() in account_email.lower():
+                    return True
+            except:
+                pass
+            # If we're logged in with a different account, we need to logout first
+            await self._logout(page)
+        return await self._authorize(page)
+
     async def _purchase_free_game(self):
         # == Cart Page == #
-        await self.page.goto(URL_CART, wait_until="domcontentloaded")
+        await self.page.goto(URL_CART, wait_until="domcontentloaded", timeout=29000)
 
         logger.debug("Move ALL paid games from the shopping cart out")
         await self._empty_cart(self.page)
@@ -232,12 +281,6 @@ class EpicGames:
             await self.page.reload()
             return await self._purchase_free_game()
 
-    async def authorize(self, page: Page):
-        await page.goto(URL_CLAIM, wait_until="domcontentloaded")
-        if "true" == await page.locator("//egs-navigation").get_attribute("isloggedin"):
-            return True
-        return await self._authorize(page)
-
     @retry(retry=retry_if_exception_type(TimeoutError), stop=stop_after_attempt(2), reraise=True)
     async def collect_weekly_games(self, promotions: List[PromotionGame]):
         # --> Make sure promotion is not in the library before executing
@@ -253,3 +296,23 @@ class EpicGames:
             logger.success("🎉 Successfully collected all weekly games")
         except TimeoutError:
             logger.warning("Failed to collect all weekly games")
+
+    async def collect_for_all_accounts(self):
+        """Собрать игры для всех аккаунтов последовательно."""
+        accounts = [(self.settings.EPIC_EMAIL, self.settings.EPIC_PASSWORD)]
+        if not accounts:
+            logger.error("❌ Нет аккаунтов для обработки")
+            return
+
+        for email, password in accounts:
+            logger.info(f"🔄 Обработка аккаунта: {email}")
+            self.settings.EPIC_EMAIL = email
+            self.settings.EPIC_PASSWORD = SecretStr(password)
+            
+            # Очищаем кэш браузера перед каждым аккаунтом
+            await self.page.context.clear_cookies()
+            
+            # Собираем игры для текущего аккаунта
+            await self.collect_weekly_games(self._promotions)
+            
+            logger.success(f"✅ Завершена обработка аккаунта: {email}")

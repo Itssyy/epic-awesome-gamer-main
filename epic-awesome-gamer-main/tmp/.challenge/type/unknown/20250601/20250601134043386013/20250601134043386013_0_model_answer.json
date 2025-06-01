@@ -1,0 +1,75 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "video_metadata": null,
+            "thought": null,
+            "inline_data": null,
+            "file_data": null,
+            "thought_signature": null,
+            "code_execution_result": null,
+            "executable_code": null,
+            "function_call": null,
+            "function_response": null,
+            "text": "{\n  \"challenge_prompt\": \"Please drag the shape on the right to its missing position in the pattern\",\n  \"paths\": [\n    {\n      \"start_point\": {\n        \"x\": 1045,\n        \"y\": 465\n      },\n      \"end_point\": {\n        \"x\": 718,\n        \"y\": 692\n      }\n    }\n  ]\n}"
+          }
+        ],
+        "role": "model"
+      },
+      "citation_metadata": null,
+      "finish_message": null,
+      "token_count": null,
+      "finish_reason": "STOP",
+      "url_context_metadata": null,
+      "avg_logprobs": null,
+      "grounding_metadata": null,
+      "index": 0,
+      "logprobs_result": null,
+      "safety_ratings": null
+    }
+  ],
+  "create_time": null,
+  "response_id": null,
+  "model_version": "models/gemini-2.5-flash-preview-05-20",
+  "prompt_feedback": null,
+  "usage_metadata": {
+    "cache_tokens_details": null,
+    "cached_content_token_count": null,
+    "candidates_token_count": 102,
+    "candidates_tokens_details": null,
+    "prompt_token_count": 713,
+    "prompt_tokens_details": [
+      {
+        "modality": "TEXT",
+        "token_count": 197
+      },
+      {
+        "modality": "IMAGE",
+        "token_count": 516
+      }
+    ],
+    "thoughts_token_count": 2538,
+    "tool_use_prompt_token_count": null,
+    "tool_use_prompt_tokens_details": null,
+    "total_token_count": 3353,
+    "traffic_type": null
+  },
+  "automatic_function_calling_history": [],
+  "parsed": {
+    "challenge_prompt": "Please drag the shape on the right to its missing position in the pattern",
+    "paths": [
+      {
+        "start_point": {
+          "x": 1045,
+          "y": 465
+        },
+        "end_point": {
+          "x": 718,
+          "y": 692
+        }
+      }
+    ]
+  }
+}
