@@ -43,8 +43,7 @@ jobs:
         
     - name: Run Epic Games Collector
       id: run_script
-      run: |
-        xvfb-run python src/epic_awesome_gamer/epic_games.py > output.log 2>&1
+      run: xvfb-run python src/epic_awesome_gamer/epic_games.py
         
     - name: Send Telegram notification
       if: always()
