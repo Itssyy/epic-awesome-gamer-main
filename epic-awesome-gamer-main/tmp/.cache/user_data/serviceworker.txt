@@ -1,0 +1,13 @@
+9
+
+https://www.epicgames.com/account/
+https://www.epicgames.com/account/epic-service-worker.js
+true
+{a6aad39e-6c94-4ad2-80f8-ac855bd787ce}
+0
+1748770424860247
+1748770425485270
+1748770422484720
+0
+true
+#

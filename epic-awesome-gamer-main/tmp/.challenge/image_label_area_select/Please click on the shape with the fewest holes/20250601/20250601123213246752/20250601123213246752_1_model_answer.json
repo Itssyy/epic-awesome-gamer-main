@@ -1,0 +1,69 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "video_metadata": null,
+            "thought": null,
+            "inline_data": null,
+            "file_data": null,
+            "thought_signature": null,
+            "code_execution_result": null,
+            "executable_code": null,
+            "function_call": null,
+            "function_response": null,
+            "text": "{\n  \"challenge_prompt\": \"Please click on the shape with the fewest holes\",\n  \"points\": [\n    {\"x\": 640, \"y\": 530}\n  ]\n}"
+          }
+        ],
+        "role": "model"
+      },
+      "citation_metadata": null,
+      "finish_message": null,
+      "token_count": null,
+      "finish_reason": "STOP",
+      "url_context_metadata": null,
+      "avg_logprobs": null,
+      "grounding_metadata": null,
+      "index": 0,
+      "logprobs_result": null,
+      "safety_ratings": null
+    }
+  ],
+  "create_time": null,
+  "response_id": null,
+  "model_version": "models/gemini-2.5-flash-preview-05-20",
+  "prompt_feedback": null,
+  "usage_metadata": {
+    "cache_tokens_details": null,
+    "cached_content_token_count": null,
+    "candidates_token_count": 48,
+    "candidates_tokens_details": null,
+    "prompt_token_count": 842,
+    "prompt_tokens_details": [
+      {
+        "modality": "TEXT",
+        "token_count": 326
+      },
+      {
+        "modality": "IMAGE",
+        "token_count": 516
+      }
+    ],
+    "thoughts_token_count": 324,
+    "tool_use_prompt_token_count": null,
+    "tool_use_prompt_tokens_details": null,
+    "total_token_count": 1214,
+    "traffic_type": null
+  },
+  "automatic_function_calling_history": [],
+  "parsed": {
+    "challenge_prompt": "Please click on the shape with the fewest holes",
+    "points": [
+      {
+        "x": 640,
+        "y": 530
+      }
+    ]
+  }
+}

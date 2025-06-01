@@ -1,0 +1,2 @@
+[console_scripts]
+hc = hcaptcha_challenger.cli.main:main

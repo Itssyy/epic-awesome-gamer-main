@@ -1,0 +1,64 @@
+{
+  "key": "E0_eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJkYXRhIjoiKzRJbm9MZ0hyNzRYNmowQWtIQkJGa3dSNW5RbWJHRS9BdlV2WlEwQ25jODJFa1BiVHQ4bGVaZzRPandXdjBrMkRyOHBHTnl1K3ovZGxxMm10bDJkTDgyWnRVYU1JeVpJeHBHZ29TeUsyODZvZk5BUDJxbFBNemRCVER4NGF0K2l1MHMxNmZIbzljZEZzUTFsNmhVSnVVZlovdnlCNlc5aXNudnpSM3ZDMGQrcHJ5TVMxQWVpS1hZa3lzSTZvbmFLN0ExMVRhZXBTZ0orR2pMbW9qZ2hUa3lCZ3YveTRVZFlaeUpPcGIyenBCYUo5VmJObytDTms1Myt0S2VwY05ZcXd6ekhYaTBuRUtUbVliUGNTWG5YWllsNis3b3h0UXMvTVR4YTVOL0NRK0FwYWtNY1FOdXNnZlVrdi9UajZycWdCT2Z0Q1FjbEJGa0VlNGJ0eWJtNGNrYUNKT0ZTWVo2cXFpUzVzSlE9K3BmRGRFT2pOcjl2N1dIZSIsImV4cCI6MTc0ODc3MDQ0Miwia3IiOiIxMjVlMzVmMyJ9.vNl9pl1ovXto4LYPBb4T4gU0P3zgBsjp46mpHQ7WXHg",
+  "request_config": {
+    "version": 0,
+    "shape_type": null,
+    "min_points": null,
+    "max_points": null,
+    "min_shapes_per_image": null,
+    "max_shapes_per_image": null,
+    "restrict_to_coords": null,
+    "minimum_selection_area_per_shape": null,
+    "multiple_choice_max_choices": 1,
+    "multiple_choice_min_choices": 1,
+    "overlap_threshold": null,
+    "answer_type": "str",
+    "max_value": null,
+    "min_value": null,
+    "max_length": null,
+    "min_length": null,
+    "sig_figs": null,
+    "keep_answers_order": null,
+    "ignore_case": false,
+    "new_translation": true
+  },
+  "request_type": "image_drag_drop",
+  "requester_question": {
+    "en": "Please drag the shape on the right to its missing position in the pattern"
+  },
+  "requester_restricted_answer_set": {
+    "default": {
+      "en": "default"
+    }
+  },
+  "requester_question_example": null,
+  "tasklist": [
+    {
+      "datapoint_uri": "https://imgs3.hcaptcha.com/tip/35049e52f741b64127fa44294a44c0ee23d6531bc4479ef754a2b59074c26201/56b1f2c0f6e2e0e59cf3c87d36d4655f52059e04fde361954ec6598dd5c6c6b9.jpg",
+      "task_key": "4f213391-4e60-44ef-8101-ffdfe324f7c2",
+      "entities": [
+        {
+          "entity_id": "7bc95ff2-d66e-4f51-99e7-c345a56920e2",
+          "entity_uri": "https://imgs3.hcaptcha.com/tip/efd4cba777ec4d83838257aa8e062e6b0c40d0dbf79d4680dfa1129761e55931/692c10a1fa505245a675d3f2bef557281932fff4529fc42f28efdcce52310ac5.png",
+          "coords": [
+            419,
+            52
+          ],
+          "size": [
+            57,
+            56
+          ],
+          "metadata": {
+            "original_uri": "s3://fantasia-assets.hcaptcha.com/d-and-d-dragshapetopattern-2-pentagon_tri_tri_darker_m2b4ca/3fe6a6ff-118e-429c-b4dc-13ffbaf5c379.png"
+          }
+        }
+      ]
+    }
+  ],
+  "oby": "v2:Cfs8fTl/jHvhaVQxiKP9jDZkYmE2YmVk2z2eqwW/Ay+g07fRelBmcmnhyT54lEx4rdZCARPMBmMH+9dA8A4WrfITY5dBJPV4XerO65dYO5D1f90jabrrykUyW4qKkiHkVn04on6SSHr7ZsAW53XWUqU24rGzZABW9xnn7LE7wNM1+DZ779DjbmP0EmJjLLVQeMq1YW2XexU=",
+  "normalized": true,
+  "c": {
+    "req": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJmIjowLCJzIjoxNiwidCI6InciLCJkIjoieVpFaDVlL2JRRzJidytCWXI1VldITkhDMkI5OHdqN2g1RC9rNWFnOWtkZHlxVklKRk5tdW9wc2xVNkhzTG1Ya3oyTnNqRFRxRVl1NWtZQTJIZEwzL0hPbGFJM0Q5MTR6a2VnZVVpNVh3cTI2bVhBZFVHRzAvSzVXT3B2cis0U0JPaEtGejdlNk1hS3gzWWNtZ2FOZmo3emFDYWQzK29lNkkvVEhIc1YxUFZzUTJtYUl5dTZDc3JGdkJhRTVYWTFTejBIaUNIdnNsc0lrMGFteHVRNXFWZjZxcnkrL29aeXJlZWFFMVRlenRtZHJEWVpoM2VNZE5rR252bjN6Z05VdVpRPT0zelp1ZGYzZHQ5MHVaSjZHIiwibCI6Ii9jL2Y5MzJmNjg5ZjgxYTVjZDZiNzU0ZGMzZmFjODA4MjVhMTA3ZGM3MTI5NzkzODk2ZTliYjFhNzlmZTdjNTU4N2IiLCJpIjoic2hhMjU2LWlRbFh6R1hDd2k1R1dhNFpWdzJPTU5PK2FOTFJ6Qk5tRHpRTGljRVVsSUk9IiwiZSI6MTc0ODc3MjE1MywibiI6ImhzdyIsImMiOjEwMDB9.HigRKHQsZ22na3XtNLFYJGghmqnqflQXvF9RXeGXgoc",
+    "type": "hsw"
+  }
+}

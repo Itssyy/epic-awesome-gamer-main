@@ -1,0 +1,53 @@
+{
+  "key": "E0_eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJkYXRhIjoiVVpJK29NUU5pTnZVMUNraDBtWVR6S281RnVNeER5ZW1UMThtMHRQU3ZDKzBTY1hjOG5kNnJOQ0dOazhKS1IxZjM0NS92VVpmeWxXMjZ5UjhXOFgwY081RzNXQVdNRnlGcmZBY3JnQjRuSHhEaENpN0VGN3VucmtkQlMyVmsxVklVTkVJUzgxU3I5YjJwOGJEQ2lveXM4aWlQQTRXaC9KcFhaazR0dEZiaVNDbWIvcVJpaXM1MUtLM0pZMUg5N2NvcThkeFVnemZabDNJeUpOVWl1WisyL2VoRUkrRmF0eFF5Zmp2dE1RRkN2N0tWTFR3bmd0c2M3VVR0QnovQXJlOEhnZ0x1akNRYjRYNWw2WEtKNk4rbzE1NkozK0wwUDNsQ2c2aStRNmVWUlVISkM1NUExQllYRnVPOVlCT0tJdGEyMExsejFHZll0cER0VEhQVUVlcWxFcXN2WkxheXVvWkRZQS9sK1pTbFFNSXdCYkY4Ry9YNkx2UlI2OTYiLCJleHAiOjE3NDg3NzA0MTEsImtyIjoiODQ4ZjYyNiJ9.ApfMmT5mA0y1Jinao0GXMKU2AMd-zEFSZcNngS16xqM",
+  "request_config": {
+    "version": 0,
+    "shape_type": "point",
+    "min_points": null,
+    "max_points": null,
+    "min_shapes_per_image": 1,
+    "max_shapes_per_image": 1,
+    "restrict_to_coords": null,
+    "minimum_selection_area_per_shape": null,
+    "multiple_choice_max_choices": 1,
+    "multiple_choice_min_choices": 1,
+    "overlap_threshold": null,
+    "answer_type": "str",
+    "max_value": null,
+    "min_value": null,
+    "max_length": null,
+    "min_length": null,
+    "sig_figs": null,
+    "keep_answers_order": null,
+    "ignore_case": false,
+    "new_translation": true
+  },
+  "request_type": "image_label_area_select",
+  "requester_question": {
+    "en": "Please click on the shape with the fewest holes"
+  },
+  "requester_restricted_answer_set": {
+    "default": {
+      "en": "default"
+    }
+  },
+  "requester_question_example": null,
+  "tasklist": [
+    {
+      "datapoint_uri": "https://imgs3.hcaptcha.com/tip/2f0a8903322675cff97159109d49e6d109de0bf4fb5a65c96173e962650f50de/8bb9211526f257dec3eaa9d51f2c8c675633c01143fe4df460a2684d9d467146.jpg",
+      "task_key": "30d06cf1-e2e0-4e95-92de-4df05ff7d2f1",
+      "entities": []
+    },
+    {
+      "datapoint_uri": "https://imgs3.hcaptcha.com/tip/7a13917bb7c8cea1b84a9c99b79b6bf40353afb12faa6ff11721eed121f32a07/813c75a8baced429fbe77faf20c5ecf3ab12ec2a38e14c3142aa16931bfd2841.jpg",
+      "task_key": "d9b4f255-52f4-4b24-86e8-8516c59d7d3a",
+      "entities": []
+    }
+  ],
+  "oby": "v2:k7gdGW7QnR5D+Vi8lvdICjgwMDkxYzg5js42QxFEmPQDfm1ZC1Sd04UJ+B6RuO3CVA23V7bzam61rXOCeWpWuZynXC9APqyB7BDr/gsg0ytgNIJDxP8jWkzH3waKm9Nkg+4LkrVCo4A4sMqD/jDM+X36F7PUdjD5iueWBl++0kJui/4xo8IzayPriymlIPSjipUDncA81NY=",
+  "normalized": true,
+  "c": {
+    "req": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJmIjowLCJzIjoyLCJ0IjoidyIsImQiOiJVWUNBTC9sMUcwMEw2dnpSTnN0Skw3b0EwczkxSDJsVkhCUkFBT0V5aUF0T2xQY0VrUzNNTUdXVjA5Wm1yRmE1WkIxU3pwZHZETytxakhtRTVUYzVlWHdjM3duUXd0TUlBT1prc1lVc0pOVUF1Q2ZWUVhFcVZDalM1UTl4RDhwU0tOZWdUNVBXSjlRbnRIOUcrWDA5czN3b3o5Q045WnRaMWJEMHVJNDJpbEVocjdJaXJXcWxnaW04TW0rbGliNDcyemZFT1BKeXZYcjJlMU1vUWxaZ0ltUTVJQ1JNZDQxRUVZSDZrV3V1S1FIbDRiRk1TbURUSFNEaVdaKzRUVUhSTlZhcEtzdGlLelNoRnpkMCIsImwiOiIvYy9mOTMyZjY4OWY4MWE1Y2Q2Yjc1NGRjM2ZhYzgwODI1YTEwN2RjNzEyOTc5Mzg5NmU5YmIxYTc5ZmU3YzU1ODdiIiwiaSI6InNoYTI1Ni1pUWxYekdYQ3dpNUdXYTRaVncyT01OTythTkxSekJObUR6UUxpY0VVbElJPSIsImUiOjE3NDg3NzIxMjIsIm4iOiJoc3ciLCJjIjoxMDAwfQ.ttpr_ptefdSwpCjE_sC1PJLeujE7xfj-OWSwwIpvMuI",
+    "type": "hsw"
+  }
+}

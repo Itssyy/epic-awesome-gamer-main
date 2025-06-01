@@ -1,0 +1,2 @@
+[console_scripts]
+epic = epic_awesome_gamer.cli.main:main
