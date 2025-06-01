@@ -30,8 +30,8 @@ jobs:
     - name: Create virtual environment
       run: uv venv
 
-    - name: Install Python dependencies
-      run: uv pip install -r requirements.txt
+    - name: Install Python dependencies from lock file
+      run: uv pip install --locked
         
     - name: Create accounts file
       run: |
@@ -45,9 +45,6 @@ jobs:
       id: run_script
       run: |
         xvfb-run python src/epic_awesome_gamer/epic_games.py > output.log 2>&1
-        echo "output<<EOF" >> $GITHUB_OUTPUT
-        cat output.log >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
         
     - name: Send Telegram notification
       if: always()

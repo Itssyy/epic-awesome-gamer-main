@@ -4,5 +4,4 @@ selenium==4.15.2
 webdriver-manager==4.0.1
 python-dotenv==1.0.0
 requests==2.31.0
-beautifulsoup4==4.12.2
-python-telegram-bot==20.6 
+beautifulsoup4==4.12.2 
