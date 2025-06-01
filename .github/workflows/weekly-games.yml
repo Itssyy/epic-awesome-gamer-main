@@ -61,47 +61,19 @@ jobs:
         if [ -f "$LOG_FILE" ]; then
           echo "Output log file found: $LOG_FILE"
           cat "$LOG_FILE"
-        else
+        else:
           echo "Output log file NOT found at: $LOG_FILE"
         fi
-        
+
     - name: Send Telegram notification
-      if: always()
+      if: always() # Выполнять всегда, даже если предыдущие шаги упали
       run: |
-        python -c "
-        import requests
-        import os
-        from datetime import datetime
+        # Определяем статус выполнения job'а
+        if [[ "${{ job.status }}" == "success" ]]; then
+          MESSAGE="✅ GitHub Actions Workflow успешно завершен."
+        else
+          MESSAGE="❌ GitHub Actions Workflow завершен с ошибкой."
+        fi
         
-        # Читаем лог выполнения
-        log_path = 'epic-awesome-gamer-main/output.log'
-        if os.path.exists(log_path):
-            with open(log_path, 'r') as f:
-                output = f.read()
-        else:
-            output = 'No output log file found!'
-        
-        # Формируем сообщение
-        status = '✅ Успешно' if '${{ job.status }}' == 'success' else '❌ Ошибка'
-        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        
-        message = f'''🎮 Epic Games Collector
-        Время: {current_time}
-        Статус: {status}
-        
-        Результат выполнения:
-        {output}'''
-        
-        # Отправляем сообщение
-        telegram_token = '${{ secrets.TELEGRAM_BOT_TOKEN }}'
-        telegram_chat_id = '${{ secrets.TELEGRAM_CHAT_ID }}'
-        
-        url = f'https://api.telegram.org/bot{telegram_token}/sendMessage'
-        data = {
-            'chat_id': telegram_chat_id,
-            'text': message,
-            'parse_mode': 'HTML'
-        }
-        
-        requests.post(url, data=data)
-        " 
+        # Отправляем уведомление в Telegram
+        curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -d text="$MESSAGE" -d parse_mode="HTML"

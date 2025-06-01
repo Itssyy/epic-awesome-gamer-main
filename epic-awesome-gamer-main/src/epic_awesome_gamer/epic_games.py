@@ -94,22 +94,16 @@ class EpicGames:
                 logger.info("UK order confirmation not required or button not enabled.")
 
     @staticmethod
-    async def add_promotion_to_cart(page: Page, urls: List[str]) -> bool:
+    async def add_promotion_to_cart(page: Page, urls: List[str]) -> tuple[bool, List[PromotionGame]]:
         logger.info(f"Attempting to add promotions to cart. URLs: {urls}")
         has_pending_free_promotion = False
-        added_games = [] # Список игр, успешно добавленных в корзину
+        added_games = []
 
-        # --> Add promotions to Cart
         for url in urls:
             logger.info(f"Navigating to promotion URL: {url}")
             await page.goto(url, wait_until="load", timeout=29000)
             logger.info(f"Arrived at: {page.url}")
 
-            # <-- Handle pre-page
-            # with suppress(TimeoutError):
-            #     await page.click("//button//span[text()='Continue']", timeout=3000)
-
-            # 检查游戏是否已在库
             btn_list = page.locator("//aside//button")
             aside_btn_count = await btn_list.count()
             texts = ""
@@ -122,35 +116,30 @@ class EpicGames:
                 logger.success(f"✅ Already in the library - {url=}")
                 continue
 
-            # 检查是否为免费游戏
             purchase_btn = page.locator("//aside//button[@data-testid='purchase-cta-button']")
             purchase_status = await purchase_btn.text_content()
             if "Buy Now" in purchase_status or "Get" not in purchase_status:
                 logger.debug(f"❌ Not available for purchase - {url=}")
                 continue
 
-            # 将免费游戏添加至购物车
             add_to_cart_btn = page.locator("//aside//button[@data-testid='add-to-cart-cta-button']")
             try:
                 text = await add_to_cart_btn.text_content()
                 if text == "View In Cart":
                     logger.debug(f"🙌 Already in the shopping cart - {url=}")
                     has_pending_free_promotion = True
-                    # TODO: Получить название игры и добавить в added_games
                 elif text == "Add To Cart":
                     logger.info(f"Clicking Add To Cart for {url}")
                     await add_to_cart_btn.click()
                     logger.debug(f"🙌 Add to the shopping cart - {url=}")
                     await expect(add_to_cart_btn).to_have_text("View In Cart")
                     has_pending_free_promotion = True
-                    # TODO: Получить название игры и добавить в added_games
 
             except Exception as err:
                 logger.warning(f"Failed to add promotion to cart - {err}")
                 continue
 
         logger.info(f"Finished adding promotions to cart. has_pending_free_promotion: {has_pending_free_promotion}")
-        # Возвращаем статус наличия бесплатных игр для оформления и список добавленных игр
         return has_pending_free_promotion, added_games
 
     async def _empty_cart(self, page: Page, wait_rerender: int = 30) -> bool | None:
@@ -170,11 +159,9 @@ class EpicGames:
         has_paid_free = False
 
         try:
-            # Check all items in the shopping cart
             cards = await page.query_selector_all("//div[@data-testid='offer-card-layout-wrapper']")
             logger.info(f"Found {len(cards)} items in cart.")
 
-            # Move paid games to the wishlist
             for card in cards:
                 is_free = await card.query_selector("//span[text()='Free']")
                 if not is_free:
@@ -185,10 +172,6 @@ class EpicGames:
                     logger.info("Moving paid game to wishlist.")
                     await wishlist_btn.click()
 
-            # Wait up to 60 seconds for the page to re-render.
-            # Usually it takes 1~3s for the web page to be re-rendered
-            # - Set threshold for overflow in case of poor Epic network
-            # - It can also prevent extreme situations, such as: the user's shopping cart has nearly a hundred products
             if has_paid_free and wait_rerender:
                 logger.info(f"Paid games moved, waiting for re-render. Remaining attempts: {wait_rerender}")
                 wait_rerender -= 1
@@ -206,7 +189,6 @@ class EpicGames:
             logger.error("Authorization failed after multiple retries.")
             return
 
-        # Очищаем все куки и кэш браузера
         logger.info("Clearing browser cookies and cache.")
         await page.context.clear_cookies()
         await page.goto("about:blank")
@@ -220,7 +202,6 @@ class EpicGames:
 
         agent = AgentV(page=page, agent_config=self.solver_config)
 
-        # {{< SIGN IN PAGE >}}
         logger.info("Typing email and password.")
         await page.type("#email", self.settings.EPIC_EMAIL, delay=30, timeout=29000)
         await asyncio.sleep(1)
@@ -228,15 +209,12 @@ class EpicGames:
         await asyncio.sleep(1)
 
         try:
-            # Active hCaptcha checkbox
             logger.info("Clicking sign-in button.")
             await page.click("#sign-in", timeout=29000)
             await asyncio.sleep(5)
-            # Active hCaptcha challenge
             logger.info("Waiting for hCaptcha challenge.")
             await agent.wait_for_challenge()
             logger.info("hCaptcha challenge likely handled.")
-            # Wait for the page to redirect
         except Exception as err:
             logger.warning(f"Failed to solve captcha or sign in - {err}")
             await page.reload()
@@ -252,23 +230,18 @@ class EpicGames:
         """Logout from the current Epic Games account."""
         logger.info("Attempting to logout.")
         try:
-            # Go to account page
             await page.goto("https://www.epicgames.com/account/personal", wait_until="networkidle")
             
-            # Check if we're logged in
             if "true" != await page.locator("//egs-navigation").get_attribute("isloggedin"):
                 logger.debug("Already logged out.")
                 return True
 
-            # Click on the account menu
             logger.info("Clicking account menu button.")
             await page.click("//button[@id='account-menu-button']")
             
-            # Click logout button
             logger.info("Clicking logout button.")
             await page.click("//a[contains(@href, '/logout')]")
             
-            # Wait for logout to complete
             await page.wait_for_load_state("networkidle")
             logger.debug("Successfully logged out.")
             return True
@@ -281,7 +254,6 @@ class EpicGames:
         await page.goto(URL_CLAIM, wait_until="domcontentloaded", timeout=29000)
         if "true" == await page.locator("//egs-navigation").get_attribute("isloggedin"):
             logger.info("Page reports user is logged in. Checking account email.")
-            # Check if we're already logged in with the correct account
             try:
                 account_email = await page.locator("//button[@id='account-menu-button']").get_attribute("aria-label")
                 if self.settings.EPIC_EMAIL.lower() in account_email.lower():
@@ -292,77 +264,102 @@ class EpicGames:
             except:
                 logger.warning("Could not retrieve account email, assuming incorrect login and attempting logout.")
                 pass
-            # If we're logged in with a different account, we need to logout first
             await self._logout(page)
         
         logger.info("Proceeding with full authorization process.")
         await self._authorize(page)
 
     async def _purchase_free_game(self):
-        # == Cart Page == #
+        logger.info("Attempting to purchase free game.")
         await self.page.goto(URL_CART, wait_until="domcontentloaded", timeout=29000)
 
         logger.debug("Move ALL paid games from the shopping cart out")
         await self._empty_cart(self.page)
 
-        # {{< Insert hCaptcha Challenger >}}
         agent = AgentV(page=self.page, agent_config=self.solver_config)
 
-        # --> Check out cart
+        logger.info("Clicking Check Out button.")
         await self.page.click("//button//span[text()='Check Out']")
 
-        # <-- Handle Any LICENSE
+        logger.info("Attempting to agree to license if necessary.")
         await self._agree_license(self.page)
 
         try:
-            # --> Move to webPurchaseContainer iframe
             logger.debug("Move to webPurchaseContainer iframe")
             wpc, payment_btn = await self._active_purchase_container(self.page)
             logger.debug("Click payment button")
-            # <-- Handle UK confirm-order
             await self._uk_confirm_order(wpc)
 
-            # {{< Active >}}
+            logger.info("Waiting for hCaptcha challenge during purchase.")
             await agent.wait_for_challenge()
+            logger.info("hCaptcha challenge likely handled during purchase.")
         except Exception as err:
-            logger.warning(f"Failed to solve captcha - {err}")
+            logger.warning(f"Failed to solve captcha during purchase - {err}")
             await self.page.reload()
+            logger.info("Reloading page and retrying purchase.")
             return await self._purchase_free_game()
+        logger.info("Purchase process initiated.")
 
     @retry(retry=retry_if_exception_type(TimeoutError), stop=stop_after_attempt(2), reraise=True)
-    async def collect_weekly_games(self, promotions: List[PromotionGame]):
-        # --> Make sure promotion is not in the library before executing
+    async def collect_weekly_games(self, promotions: List[PromotionGame]) -> List[PromotionGame]:
+        logger.info("Starting weekly games collection process.")
         urls = [p.url for p in promotions]
         has_pending_free_promotion, added_games = await self.add_promotion_to_cart(self.page, urls)
+
         if not has_pending_free_promotion:
             logger.success("✅ All week-free games are already in the library")
-            return [] # Возвращаем пустой список, так как ничего не собирали
+            return []
 
+        logger.info("Proceeding with purchase for pending free promotions.")
         await self._purchase_free_game()
 
         try:
-            await self.page.wait_for_url(URL_CART_SUCCESS)
+            await self.page.wait_for_url(URL_CART_SUCCESS, timeout=30000)
             logger.success("🎉 Successfully collected all weekly games")
             return added_games
         except TimeoutError:
-            logger.warning("Failed to collect all weekly games")
-            return [] # Возвращаем пустой список в случае ошибки оформления
+            logger.warning("Failed to collect all weekly games - Timeout waiting for success page")
+            return []
+        except Exception as e:
+            logger.warning(f"An error occurred during collection: {e}")
+            return []
 
     async def collect_for_all_accounts(self):
         """Собрать игры для всех аккаунтов последовательно."""
-        accounts = [(self.settings.EPIC_EMAIL, self.settings.EPIC_PASSWORD)]
+        # TODO: Сделать чтение аккаунтов из файла accounts.json
+        # Пока используем аккаунты из настроек, предполагая, что они загружены туда
+        accounts = [(self.settings.EPIC_EMAIL, self.settings.EPIC_PASSWORD.get_secret_value())]
+        
+        # Если аккаунты не были загружены в настройки, попробуем прочитать accounts.json
+        if not self.settings.EPIC_EMAIL or not self.settings.EPIC_PASSWORD.get_secret_value():
+            try:
+                with open('accounts.json', 'r') as f:
+                    accounts_data = json.load(f)
+                    accounts = [(acc['email'], acc['password']) for acc in accounts_data]
+                logger.info(f"Загружено {len(accounts)} аккаунтов из accounts.json")
+            except FileNotFoundError:
+                logger.error("❌ Файл accounts.json не найден и аккаунты не настроены через переменные окружения.")
+                return
+            except json.JSONDecodeError:
+                logger.error("❌ Ошибка декодирования JSON в accounts.json. Убедитесь, что формат правильный.")
+                return
+            except Exception as e:
+                logger.error(f"❌ Ошибка при чтении accounts.json: {e}")
+                return
+                
+
         if not accounts:
-            logger.error("❌ Нет аккаунтов для обработки")
-            # Отправить уведомление об отсутствии аккаунтов
-            await self._send_telegram_notification("❌ Нет аккаунтов для обработки")
+            logger.error("❌ Нет аккаунтов для обработки после попытки загрузки из accounts.json.")
             return
 
+        logger.info(f"Найдено {len(accounts)} аккаунтов для обработки")
+
+        # --- Начало логики обработки аккаунтов ---
         for i, (email, password) in enumerate(accounts):
-            logger.info(f"🔄 Обработка аккаунта: {email}")
-            account_status_message = f"🔄 Обработка аккаунта: {email}"
-            collected_games_list = [] # Список собранных игр для этого аккаунта
+            logger.info(f"🔄 Обработка аккаунта {i+1}/{len(accounts)}: {email}")
             
             try:
+                # Обновляем настройки для текущего аккаунта
                 self.settings.EPIC_EMAIL = email
                 self.settings.EPIC_PASSWORD = SecretStr(password)
                 
@@ -370,44 +367,92 @@ class EpicGames:
                 await self.page.context.clear_cookies()
                 logger.info("Кэш браузера очищен перед обработкой нового аккаунта.")
                 
-                # Собираем игры для текущего аккаунта
-                collected_games_list = await self.collect_weekly_games(self._promotions)
+                # Авторизация
+                await self.authorize(self.page)
+                logger.info("Авторизация выполнена.")
                 
-                account_status_message = f"✅ Завершена обработка аккаунта: {email}"
-                if collected_games_list:
-                    game_titles = [game.title for game in collected_games_list if hasattr(game, 'title')]
-                    account_status_message += f"\nСобраны игры: {', '.join(game_titles)}"
+                # Сбор игр для текущего аккаунта
+                collected_games = await self.collect_weekly_games(self._promotions)
+                
+                if collected_games:
+                    game_titles = [game.title for game in collected_games if hasattr(game, 'title')]
+                    logger.success(f"✅ Успешно собраны игры для аккаунта {email}: {', '.join(game_titles)}")
                 else:
-                    account_status_message += "\nНовых бесплатных игр не найдено или не удалось собрать."
+                    logger.info(f"✅ Новых бесплатных игр не найдено или не удалось собрать для аккаунта {email}.")
 
             except Exception as e:
-                account_status_message = f"❌ Ошибка при обработке аккаунта {email}: {str(e)}"
-                logger.error(account_status_message)
+                logger.error(f"❌ Ошибка при обработке аккаунта {email}: {e}")
             
-            # Отправить уведомление после обработки каждого аккаунта
-            await self._send_telegram_notification(account_status_message)
+        # --- Конец логики обработки аккаунтов ---    
+
+        logger.complete()
+
+
+async def run_collector():
+    # Эта функция теперь не отправляет уведомления в Telegram, только выполняет сбор
+    from browserforge.fingerprints import Screen
+    from camoufox.async_api import AsyncCamoufox
+    from playwright.async_api import Page
+    from hcaptcha_challenger.agent import AgentConfig
+
+    # Вместо получения из аргументов командной строки, получаем из переменных окружения
+    epic_email = os.environ.get("EPIC_EMAIL")
+    epic_password = os.environ.get("EPIC_PASSWORD")
+    gemini_api_key = os.environ.get("GEMINI_API_KEY")
+    
+    # TODO: Возможно, стоит использовать accounts.json как основной способ получения аккаунтов
+    # и переменные окружения для GEMINI_API_KEY
+
+    user_data_dir = Path("tmp/.cache/user_data") # Используем фиксированный путь или получаем из env
+
+    try:
+        # Создаем отдельную директорию для данных браузера
+        user_data_dir.mkdir(parents=True, exist_ok=True)
+        logger.info(f"Создана директория для данных браузера: {user_data_dir}")
+
+        async with AsyncCamoufox(
+            persistent_context=True,
+            user_data_dir=str(user_data_dir.resolve()),
+            screen=Screen(max_width=1920, max_height=1080),
+            humanize=0.5,
+        ) as browser:
+            logger.info("Браузер успешно запущен")
+            page = browser.pages[-1] if browser.pages else await browser.new_page()
             
-        logger.complete() # Сброс буфера логирования
+            epic_settings = EpicSettings()
+            # Загружаем EPIC_EMAIL и EPIC_PASSWORD через SettingsConfigDict(env_file=".env")
+            # или они уже должны быть установлены как переменные окружения в workflow
 
-    async def _send_telegram_notification(self, message: str):
-        """Отправляет сообщение в Telegram."""
-        telegram_token = os.environ.get('TELEGRAM_BOT_TOKEN')
-        telegram_chat_id = os.environ.get('TELEGRAM_CHAT_ID')
-        
-        if not telegram_token or not telegram_chat_id:
-            logger.warning("❌ Не настроены секреты TELEGRAM_BOT_TOKEN или TELEGRAM_CHAT_ID для отправки уведомлений.")
-            return
+            solver_config = AgentConfig(
+                DISABLE_BEZIER_TRAJECTORY=True,
+                CHALLENGE_CLASSIFIER_MODEL='gemini-2.5-flash-preview-05-20',
+                IMAGE_CLASSIFIER_MODEL='gemini-2.5-flash-preview-05-20',
+                SPATIAL_POINT_REASONER_MODEL='gemini-2.5-flash-preview-05-20',
+                SPATIAL_PATH_REASONER_MODEL='gemini-2.5-flash-preview-05-20',
+            )
+            if gemini_api_key:
+                solver_config.GEMINI_API_KEY = SecretStr(gemini_api_key)
+            
+            agent = EpicGames(page, epic_settings, solver_config)
+            await agent.collect_for_all_accounts()
+            logger.info("Сбор игр успешно завершен для всех аккаунтов.")
 
-        url = f'https://api.telegram.org/bot{telegram_token}/sendMessage'
-        data = {
-            'chat_id': telegram_chat_id,
-            'text': message,
-            'parse_mode': 'HTML' # Используем HTML для форматирования
-        }
-        
-        try:
-            response = requests.post(url, data=data)
-            response.raise_for_status() # Проверить на ошибки HTTP
-            logger.info("✅ Уведомление в Telegram успешно отправлено.")
-        except requests.exceptions.RequestException as e:
-            logger.error(f"❌ Ошибка при отправке уведомления в Telegram: {e}")
+    except Exception as e:
+        logger.error(f"Критическая ошибка при выполнении run_collector: {e}")
+        # Здесь можно добавить отправку уведомления об общей ошибке workflow
+        raise # Перебрасываем исключение, чтобы workflow завершился с ошибкой
+
+
+def main():
+    # Эта функция теперь просто вызывает run_collector с обработкой исключений
+    try:
+        asyncio.run(run_collector())
+    except KeyboardInterrupt:
+        logger.info("Программа остановлена пользователем")
+    except Exception as e:
+        logger.error(f"Необработанная ошибка в main: {e}")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
