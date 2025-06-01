@@ -5,6 +5,7 @@ on:
     - cron: '0 0 * * 0'  # Запуск каждое воскресенье в 00:00 UTC
     - cron: '0 0 * * 5'  # Запуск каждую пятницу в 00:00 UTC
   workflow_dispatch:  # Позволяет запускать вручную
+  # Test comment
 
 jobs:
   collect-games:
