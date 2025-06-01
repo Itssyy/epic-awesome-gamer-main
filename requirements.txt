@@ -1,4 +1,4 @@
-hcaptcha-challenger[camoufox]==0.18.5
+hcaptcha-challenger[camoufox]==0.17.1
 pydantic-settings==2.9.1
 selenium==4.15.2
 webdriver-manager==4.0.1
