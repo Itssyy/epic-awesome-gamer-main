@@ -49,18 +49,20 @@ jobs:
         python --version
         echo "Installed packages:"
         pip list
-        echo "Running script with debug output..."
-        PYTHONUNBUFFERED=1 xvfb-run python -v src/epic_awesome_gamer/epic_games.py 2>&1 | tee output.log
+        echo "Running script..."
+        PYTHONUNBUFFERED=1 xvfb-run python -u src/epic_awesome_gamer/epic_games.py 2>&1 | tee output.log
         echo "Script finished with exit code: $?"
         
     - name: Show output
       if: always()
       run: |
         echo "=== Script Output ==="
-        if [ -f "epic-awesome-gamer-main/output.log" ]; then
-          cat epic-awesome-gamer-main/output.log
+        LOG_FILE="epic-awesome-gamer-main/output.log"
+        if [ -f "$LOG_FILE" ]; then
+          echo "Output log file found: $LOG_FILE"
+          cat "$LOG_FILE"
         else
-          echo "No output log file found!"
+          echo "Output log file NOT found at: $LOG_FILE"
         fi
         
     - name: Send Telegram notification
