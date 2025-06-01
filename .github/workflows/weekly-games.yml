@@ -3,6 +3,7 @@ name: Weekly Epic Games Collector
 on:
   schedule:
     - cron: '0 0 * * 0'  # Запуск каждое воскресенье в 00:00 UTC
+    - cron: '0 0 * * 5'  # Запуск каждую пятницу в 00:00 UTC
   workflow_dispatch:  # Позволяет запускать вручную
 
 jobs:
@@ -36,5 +37,45 @@ jobs:
         echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > .env
         
     - name: Run Epic Games Collector
+      id: run_script
       run: |
-        xvfb-run python src/epic_awesome_gamer/epic_games.py 
+        xvfb-run python src/epic_awesome_gamer/epic_games.py > output.log 2>&1
+        echo "output<<EOF" >> $GITHUB_OUTPUT
+        cat output.log >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+        
+    - name: Send Telegram notification
+      if: always()
+      run: |
+        python -c "
+        import requests
+        import os
+        from datetime import datetime
+        
+        # Получаем результаты выполнения
+        output = '''${{ steps.run_script.outputs.output }}'''
+        
+        # Формируем сообщение
+        status = '✅ Успешно' if '${{ job.status }}' == 'success' else '❌ Ошибка'
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        message = f'''🎮 Epic Games Collector
+        Время: {current_time}
+        Статус: {status}
+        
+        Результат выполнения:
+        {output}'''
+        
+        # Отправляем сообщение
+        telegram_token = '${{ secrets.TELEGRAM_BOT_TOKEN }}'
+        telegram_chat_id = '${{ secrets.TELEGRAM_CHAT_ID }}'
+        
+        url = f'https://api.telegram.org/bot{telegram_token}/sendMessage'
+        data = {
+            'chat_id': telegram_chat_id,
+            'text': message,
+            'parse_mode': 'HTML'
+        }
+        
+        requests.post(url, data=data)
+        " 
