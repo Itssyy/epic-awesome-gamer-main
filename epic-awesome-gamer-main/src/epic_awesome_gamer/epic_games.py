@@ -50,28 +50,36 @@ class EpicGames:
         self.solver_config = solver_config
 
         self._promotions: List[PromotionGame] = []
+        logger.info("EpicGames initialized.")
 
     @staticmethod
     async def _agree_license(page: Page):
+        logger.info("Attempting to agree to license.")
         with suppress(TimeoutError):
             await page.click("//label[@for='agree']", timeout=29000)
             accept = page.locator("//button//span[text()='Accept']")
             if await accept.is_enabled():
                 await accept.click()
+                logger.info("License accepted.")
+            else:
+                logger.info("License acceptance not required or button not enabled.")
 
     @staticmethod
     async def _active_purchase_container(page: Page):
+        logger.info("Activating purchase container.")
         wpc = page.frame_locator("//iframe[@class='']")
         payment_btn = wpc.locator("//div[@class='payment-order-confirm']")
         with suppress(Exception):
             await expect(payment_btn).to_be_attached(timeout=29000)
         await page.wait_for_timeout(2000)
         await payment_btn.click(timeout=29000)
+        logger.info("Purchase container activated.")
 
         return wpc, payment_btn
 
     @staticmethod
     async def _uk_confirm_order(wpc: FrameLocator):
+        logger.info("Attempting to confirm UK order.")
         # <-- Handle UK confirm-order
         with suppress(TimeoutError):
             accept = wpc.locator(
@@ -79,15 +87,21 @@ class EpicGames:
             )
             if await accept.is_enabled(timeout=5000):
                 await accept.click()
+                logger.info("UK order confirmed.")
                 return True
+            else:
+                logger.info("UK order confirmation not required or button not enabled.")
 
     @staticmethod
     async def add_promotion_to_cart(page: Page, urls: List[str]) -> bool:
+        logger.info(f"Attempting to add promotions to cart. URLs: {urls}")
         has_pending_free_promotion = False
 
         # --> Add promotions to Cart
         for url in urls:
+            logger.info(f"Navigating to promotion URL: {url}")
             await page.goto(url, wait_until="load", timeout=29000)
+            logger.info(f"Arrived at: {page.url}")
 
             # <-- Handle pre-page
             # with suppress(TimeoutError):
@@ -121,6 +135,7 @@ class EpicGames:
                     logger.debug(f"🙌 Already in the shopping cart - {url=}")
                     has_pending_free_promotion = True
                 elif text == "Add To Cart":
+                    logger.info(f"Clicking Add To Cart for {url}")
                     await add_to_cart_btn.click()
                     logger.debug(f"🙌 Add to the shopping cart - {url=}")
                     await expect(add_to_cart_btn).to_have_text("View In Cart")
@@ -130,6 +145,7 @@ class EpicGames:
                 logger.warning(f"Failed to add promotion to cart - {err}")
                 continue
 
+        logger.info(f"Finished adding promotions to cart. has_pending_free_promotion: {has_pending_free_promotion}")
         return has_pending_free_promotion
 
     async def _empty_cart(self, page: Page, wait_rerender: int = 30) -> bool | None:
@@ -145,11 +161,13 @@ class EpicGames:
         Returns:
 
         """
+        logger.info("Attempting to empty cart of paid games.")
         has_paid_free = False
 
         try:
             # Check all items in the shopping cart
             cards = await page.query_selector_all("//div[@data-testid='offer-card-layout-wrapper']")
+            logger.info(f"Found {len(cards)} items in cart.")
 
             # Move paid games to the wishlist
             for card in cards:
@@ -159,6 +177,7 @@ class EpicGames:
                     wishlist_btn = await card.query_selector(
                         "//button//span[text()='Move to wishlist']"
                     )
+                    logger.info("Moving paid game to wishlist.")
                     await wishlist_btn.click()
 
             # Wait up to 60 seconds for the page to re-render.
@@ -166,24 +185,30 @@ class EpicGames:
             # - Set threshold for overflow in case of poor Epic network
             # - It can also prevent extreme situations, such as: the user's shopping cart has nearly a hundred products
             if has_paid_free and wait_rerender:
+                logger.info(f"Paid games moved, waiting for re-render. Remaining attempts: {wait_rerender}")
                 wait_rerender -= 1
                 await page.wait_for_timeout(2000)
                 return await self._empty_cart(page, wait_rerender)
+            logger.info("Cart is empty of paid games.")
             return True
         except TimeoutError as err:
             logger.warning("Failed to empty shopping cart", err=err)
             return False
 
     async def _authorize(self, page: Page, retry_times: int = 3):
+        logger.info(f"Attempting to authorize. Retry attempts left: {retry_times}")
         if not retry_times:
+            logger.error("Authorization failed after multiple retries.")
             return
 
         # Очищаем все куки и кэш браузера
+        logger.info("Clearing browser cookies and cache.")
         await page.context.clear_cookies()
         await page.goto("about:blank")
         await page.context.clear_permissions()
 
         point_url = "https://www.epicgames.com/account/personal?lang=en-US&productName=egs&sessionInvalidated=true"
+        logger.info(f"Navigating to authorization URL: {point_url}")
         await page.goto(point_url, wait_until="networkidle", timeout=29000)
         logger.debug(f"Login with Email - {page.url}")
         await asyncio.sleep(3)
@@ -191,6 +216,7 @@ class EpicGames:
         agent = AgentV(page=page, agent_config=self.solver_config)
 
         # {{< SIGN IN PAGE >}}
+        logger.info("Typing email and password.")
         await page.type("#email", self.settings.EPIC_EMAIL, delay=30, timeout=29000)
         await asyncio.sleep(1)
         await page.type("#password", self.settings.EPIC_PASSWORD.get_secret_value(), delay=30, timeout=29000)
@@ -198,57 +224,74 @@ class EpicGames:
 
         try:
             # Active hCaptcha checkbox
+            logger.info("Clicking sign-in button.")
             await page.click("#sign-in", timeout=29000)
             await asyncio.sleep(5)
             # Active hCaptcha challenge
+            logger.info("Waiting for hCaptcha challenge.")
             await agent.wait_for_challenge()
+            logger.info("hCaptcha challenge likely handled.")
             # Wait for the page to redirect
         except Exception as err:
-            logger.warning(f"Failed to solve captcha - {err}")
+            logger.warning(f"Failed to solve captcha or sign in - {err}")
             await page.reload()
+            logger.info("Reloading page and retrying authorization.")
             return await self._authorize(page, retry_times=retry_times - 1)
 
+        logger.info(f"Waiting for redirect to: {point_url}")
         await page.wait_for_url(point_url)
+        logger.success("Authorization successful.")
         return True
 
     async def _logout(self, page: Page):
         """Logout from the current Epic Games account."""
+        logger.info("Attempting to logout.")
         try:
             # Go to account page
             await page.goto("https://www.epicgames.com/account/personal", wait_until="networkidle")
             
             # Check if we're logged in
             if "true" != await page.locator("//egs-navigation").get_attribute("isloggedin"):
-                logger.debug("Already logged out")
+                logger.debug("Already logged out.")
                 return True
 
             # Click on the account menu
+            logger.info("Clicking account menu button.")
             await page.click("//button[@id='account-menu-button']")
             
             # Click logout button
+            logger.info("Clicking logout button.")
             await page.click("//a[contains(@href, '/logout')]")
             
             # Wait for logout to complete
             await page.wait_for_load_state("networkidle")
-            logger.debug("Successfully logged out")
+            logger.debug("Successfully logged out.")
             return True
         except Exception as err:
             logger.warning(f"Failed to logout - {err}")
             return False
 
     async def authorize(self, page: Page):
+        logger.info(f"Checking authorization status on {URL_CLAIM}")
         await page.goto(URL_CLAIM, wait_until="domcontentloaded", timeout=29000)
         if "true" == await page.locator("//egs-navigation").get_attribute("isloggedin"):
+            logger.info("Page reports user is logged in. Checking account email.")
             # Check if we're already logged in with the correct account
             try:
                 account_email = await page.locator("//button[@id='account-menu-button']").get_attribute("aria-label")
                 if self.settings.EPIC_EMAIL.lower() in account_email.lower():
+                    logger.success("Already logged in with the correct account.")
                     return True
+                else:
+                    logger.warning("Logged in with incorrect account, attempting logout.")
             except:
+                logger.warning("Could not retrieve account email, assuming incorrect login and attempting logout.")
                 pass
             # If we're logged in with a different account, we need to logout first
             await self._logout(page)
-        return await self._authorize(page)
+        
+        logger.info("Proceeding with full authorization process.")
+        await self._authorize(page)
 
     async def _purchase_free_game(self):
         # == Cart Page == #
