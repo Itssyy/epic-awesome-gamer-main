@@ -8,6 +8,7 @@ from contextlib import suppress
 from pathlib import Path
 from typing import List
 import asyncio
+import requests
 
 from hcaptcha_challenger.agent import AgentConfig, AgentV
 from loguru import logger
@@ -96,6 +97,7 @@ class EpicGames:
     async def add_promotion_to_cart(page: Page, urls: List[str]) -> bool:
         logger.info(f"Attempting to add promotions to cart. URLs: {urls}")
         has_pending_free_promotion = False
+        added_games = [] # Список игр, успешно добавленных в корзину
 
         # --> Add promotions to Cart
         for url in urls:
@@ -134,19 +136,22 @@ class EpicGames:
                 if text == "View In Cart":
                     logger.debug(f"🙌 Already in the shopping cart - {url=}")
                     has_pending_free_promotion = True
+                    # TODO: Получить название игры и добавить в added_games
                 elif text == "Add To Cart":
                     logger.info(f"Clicking Add To Cart for {url}")
                     await add_to_cart_btn.click()
                     logger.debug(f"🙌 Add to the shopping cart - {url=}")
                     await expect(add_to_cart_btn).to_have_text("View In Cart")
                     has_pending_free_promotion = True
+                    # TODO: Получить название игры и добавить в added_games
 
             except Exception as err:
                 logger.warning(f"Failed to add promotion to cart - {err}")
                 continue
 
         logger.info(f"Finished adding promotions to cart. has_pending_free_promotion: {has_pending_free_promotion}")
-        return has_pending_free_promotion
+        # Возвращаем статус наличия бесплатных игр для оформления и список добавленных игр
+        return has_pending_free_promotion, added_games
 
     async def _empty_cart(self, page: Page, wait_rerender: int = 30) -> bool | None:
         """
@@ -328,36 +333,81 @@ class EpicGames:
     async def collect_weekly_games(self, promotions: List[PromotionGame]):
         # --> Make sure promotion is not in the library before executing
         urls = [p.url for p in promotions]
-        if not await self.add_promotion_to_cart(self.page, urls):
+        has_pending_free_promotion, added_games = await self.add_promotion_to_cart(self.page, urls)
+        if not has_pending_free_promotion:
             logger.success("✅ All week-free games are already in the library")
-            return
+            return [] # Возвращаем пустой список, так как ничего не собирали
 
         await self._purchase_free_game()
 
         try:
             await self.page.wait_for_url(URL_CART_SUCCESS)
             logger.success("🎉 Successfully collected all weekly games")
+            return added_games
         except TimeoutError:
             logger.warning("Failed to collect all weekly games")
+            return [] # Возвращаем пустой список в случае ошибки оформления
 
     async def collect_for_all_accounts(self):
         """Собрать игры для всех аккаунтов последовательно."""
         accounts = [(self.settings.EPIC_EMAIL, self.settings.EPIC_PASSWORD)]
         if not accounts:
             logger.error("❌ Нет аккаунтов для обработки")
+            # Отправить уведомление об отсутствии аккаунтов
+            await self._send_telegram_notification("❌ Нет аккаунтов для обработки")
             return
 
-        for email, password in accounts:
+        for i, (email, password) in enumerate(accounts):
             logger.info(f"🔄 Обработка аккаунта: {email}")
-            self.settings.EPIC_EMAIL = email
-            self.settings.EPIC_PASSWORD = SecretStr(password)
+            account_status_message = f"🔄 Обработка аккаунта: {email}"
+            collected_games_list = [] # Список собранных игр для этого аккаунта
             
-            # Очищаем кэш браузера перед каждым аккаунтом
-            await self.page.context.clear_cookies()
-            
-            # Собираем игры для текущего аккаунта
-            await self.collect_weekly_games(self._promotions)
-            
-            logger.success(f"✅ Завершена обработка аккаунта: {email}")
+            try:
+                self.settings.EPIC_EMAIL = email
+                self.settings.EPIC_PASSWORD = SecretStr(password)
+                
+                # Очищаем кэш браузера перед каждым аккаунтом
+                await self.page.context.clear_cookies()
+                logger.info("Кэш браузера очищен перед обработкой нового аккаунта.")
+                
+                # Собираем игры для текущего аккаунта
+                collected_games_list = await self.collect_weekly_games(self._promotions)
+                
+                account_status_message = f"✅ Завершена обработка аккаунта: {email}"
+                if collected_games_list:
+                    game_titles = [game.title for game in collected_games_list if hasattr(game, 'title')]
+                    account_status_message += f"\nСобраны игры: {', '.join(game_titles)}"
+                else:
+                    account_status_message += "\nНовых бесплатных игр не найдено или не удалось собрать."
 
+            except Exception as e:
+                account_status_message = f"❌ Ошибка при обработке аккаунта {email}: {str(e)}"
+                logger.error(account_status_message)
+            
+            # Отправить уведомление после обработки каждого аккаунта
+            await self._send_telegram_notification(account_status_message)
+            
         logger.complete() # Сброс буфера логирования
+
+    async def _send_telegram_notification(self, message: str):
+        """Отправляет сообщение в Telegram."""
+        telegram_token = os.environ.get('TELEGRAM_BOT_TOKEN')
+        telegram_chat_id = os.environ.get('TELEGRAM_CHAT_ID')
+        
+        if not telegram_token or not telegram_chat_id:
+            logger.warning("❌ Не настроены секреты TELEGRAM_BOT_TOKEN или TELEGRAM_CHAT_ID для отправки уведомлений.")
+            return
+
+        url = f'https://api.telegram.org/bot{telegram_token}/sendMessage'
+        data = {
+            'chat_id': telegram_chat_id,
+            'text': message,
+            'parse_mode': 'HTML' # Используем HTML для форматирования
+        }
+        
+        try:
+            response = requests.post(url, data=data)
+            response.raise_for_status() # Проверить на ошибки HTTP
+            logger.info("✅ Уведомление в Telegram успешно отправлено.")
+        except requests.exceptions.RequestException as e:
+            logger.error(f"❌ Ошибка при отправке уведомления в Telegram: {e}")
