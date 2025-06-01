@@ -29,17 +29,23 @@ jobs:
       run: |
         python -m venv .venv
         source .venv/bin/activate
+        python -m pip install --upgrade pip
         
     - name: Install Python dependencies
       run: |
         cd epic-awesome-gamer-main
-        python -m pip install --upgrade pip
+        source ../.venv/bin/activate
         pip install -e .
+        if [ $? -ne 0 ]; then
+          echo "Failed to install dependencies"
+          exit 1
+        fi
         
     - name: Run Epic Games Collector
       id: run_script
       run: |
         cd epic-awesome-gamer-main
+        source ../.venv/bin/activate
         echo "Creating accounts.json..."
         echo '${{ secrets.EPIC_ACCOUNTS }}' > accounts.json
         echo "Creating .env file..."
@@ -51,7 +57,12 @@ jobs:
         pip list
         echo "Running script..."
         PYTHONUNBUFFERED=1 xvfb-run python -m epic_awesome_gamer.cli.main collect 2>&1 | tee output.log
-        echo "Script finished with exit code: $?"
+        SCRIPT_EXIT_CODE=$?
+        echo "Script finished with exit code: $SCRIPT_EXIT_CODE"
+        if [ $SCRIPT_EXIT_CODE -ne 0 ]; then
+          echo "Script execution failed"
+          exit $SCRIPT_EXIT_CODE
+        fi
         
     - name: Show output
       if: always()
@@ -60,20 +71,36 @@ jobs:
         LOG_FILE="epic-awesome-gamer-main/output.log"
         if [ -f "$LOG_FILE" ]; then
           echo "Output log file found: $LOG_FILE"
-          cat "$LOG_FILE"
-        else:
+          echo "=== Last 100 lines of log ==="
+          tail -n 100 "$LOG_FILE"
+          echo "=== End of log ==="
+        else
           echo "Output log file NOT found at: $LOG_FILE"
+          echo "Current directory contents:"
+          ls -la
         fi
 
     - name: Send Telegram notification
       if: always() # Выполнять всегда, даже если предыдущие шаги упали
       run: |
         # Определяем статус выполнения job'а
-        if [[ "${{ job.status }}" == "success" ]]; then
-          MESSAGE="✅ GitHub Actions Workflow успешно завершен."
+        if [ "${{ job.status }}" = "success" ]; then
+          MESSAGE="✅ GitHub Actions Workflow успешно завершен.
+          
+          🔄 Работа выполнена: ${{ github.workflow }}
+          📅 Дата: $(date '+%Y-%m-%d %H:%M:%S')
+          🔗 Ссылка: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         else
-          MESSAGE="❌ GitHub Actions Workflow завершен с ошибкой."
+          MESSAGE="❌ GitHub Actions Workflow завершен с ошибкой.
+          
+          🔄 Работа: ${{ github.workflow }}
+          📅 Дата: $(date '+%Y-%m-%d %H:%M:%S')
+          🔗 Ссылка: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         fi
         
         # Отправляем уведомление в Telegram
-        curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} -d text="$MESSAGE" -d parse_mode="HTML"
+        curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+          -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+          -d text="$MESSAGE" \
+          -d parse_mode="HTML" \
+          -d disable_web_page_preview=true
