@@ -45,6 +45,9 @@ jobs:
       id: run_script
       run: |
         cd epic-awesome-gamer-main
+        echo '${{ secrets.EPIC_ACCOUNTS }}' > accounts.json
+        echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > .env
+        pip install -e .
         xvfb-run python src/epic_awesome_gamer/epic_games.py
         
     - name: Send Telegram notification
