@@ -12,34 +12,29 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.12'
+        cache: 'pip'
         
     - name: Install system dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y xvfb
         
-    - name: Install uv
-      run: pip install uv
-
-    - name: Create virtual environment
-      run: uv venv
-
+    - name: Set up virtual environment
+      run: |
+        python -m venv .venv
+        source .venv/bin/activate
+        
     - name: Install Python dependencies
-      run: pip install -r requirements.txt
-        
-    - name: Create accounts file
       run: |
-        echo '${{ secrets.EPIC_ACCOUNTS }}' > accounts.json
-        
-    - name: Create env file
-      run: |
-        echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > .env
+        cd epic-awesome-gamer-main
+        python -m pip install --upgrade pip
+        pip install -e .
         
     - name: Run Epic Games Collector
       id: run_script
@@ -47,8 +42,7 @@ jobs:
         cd epic-awesome-gamer-main
         echo '${{ secrets.EPIC_ACCOUNTS }}' > accounts.json
         echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > .env
-        pip install -e .
-        xvfb-run python src/epic_awesome_gamer/epic_games.py
+        xvfb-run python -m epic_awesome_gamer.epic_games
         
     - name: Send Telegram notification
       if: always()
