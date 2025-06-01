@@ -40,15 +40,23 @@ jobs:
       id: run_script
       run: |
         cd epic-awesome-gamer-main
+        echo "Creating accounts.json..."
         echo '${{ secrets.EPIC_ACCOUNTS }}' > accounts.json
+        echo "Creating .env file..."
         echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > .env
-        xvfb-run python src/epic_awesome_gamer/epic_games.py 2>&1 | tee output.log
+        echo "Starting script..."
+        xvfb-run python -u src/epic_awesome_gamer/epic_games.py 2>&1 | tee output.log
+        echo "Script finished with exit code: $?"
         
     - name: Show output
       if: always()
       run: |
         echo "=== Script Output ==="
-        cat epic-awesome-gamer-main/output.log
+        if [ -f "epic-awesome-gamer-main/output.log" ]; then
+          cat epic-awesome-gamer-main/output.log
+        else
+          echo "No output log file found!"
+        fi
         
     - name: Send Telegram notification
       if: always()
@@ -59,8 +67,12 @@ jobs:
         from datetime import datetime
         
         # Читаем лог выполнения
-        with open('epic-awesome-gamer-main/output.log', 'r') as f:
-            output = f.read()
+        log_path = 'epic-awesome-gamer-main/output.log'
+        if os.path.exists(log_path):
+            with open(log_path, 'r') as f:
+                output = f.read()
+        else:
+            output = 'No output log file found!'
         
         # Формируем сообщение
         status = '✅ Успешно' if '${{ job.status }}' == 'success' else '❌ Ошибка'
